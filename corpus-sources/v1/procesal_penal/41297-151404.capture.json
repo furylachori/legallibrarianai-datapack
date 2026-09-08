@@ -1,0 +1,45 @@
+{
+  "formatVersion": 1,
+  "slug": "procesal_penal",
+  "requestedHandle": {
+    "authorityId": 41297,
+    "versionId": 151404
+  },
+  "template": {
+    "id": "sinalevi-word-export",
+    "fingerprint": "sha256:7927e2d9a9e5771fc844f815e406c7dee4ca52e33ad8466ea8b7f03d5077275c"
+  },
+  "request": {
+    "method": "POST",
+    "endpoint": "https://sinalevi.go.cr/ResultadosNormativa/_CargarTextoCompleto"
+  },
+  "response": {
+    "status": 200,
+    "contentType": {
+      "mediaType": "application/json",
+      "charset": "utf-8"
+    },
+    "capturedAt": "2026-07-29T03:15:05.944Z"
+  },
+  "captureTool": {
+    "name": "sinalevi-fetch",
+    "version": "0.0.0"
+  },
+  "artifacts": {
+    "gzipPath": "corpus-sources/v1/procesal_penal/41297-151404.raw.json.gz",
+    "sidecarPath": "corpus-sources/v1/procesal_penal/41297-151404.capture.json",
+    "rawSha256": "6a003db13bd5e3f8121f9c5b290db545a3d28fb2a98c95a2aa14c8286e5efdf4",
+    "gzipSha256": "7768a22bf8f57775027ca8e5b79a586de0d35d0f081273d8d4aede6597620076",
+    "uncompressedBytes": 1754615
+  },
+  "observedHandlers": {
+    "fichaAnchors": 510,
+    "parsedHandlers": 510,
+    "articleKind": 505,
+    "transitoryKind": 5,
+    "zeroFicha": 510,
+    "authorityFicha": 0,
+    "versionMatched": 510,
+    "distinctSourceUnitIds": 510
+  }
+}

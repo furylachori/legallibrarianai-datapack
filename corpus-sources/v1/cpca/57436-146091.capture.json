@@ -1,0 +1,45 @@
+{
+  "formatVersion": 1,
+  "slug": "cpca",
+  "requestedHandle": {
+    "authorityId": 57436,
+    "versionId": 146091
+  },
+  "template": {
+    "id": "sinalevi-word-export",
+    "fingerprint": "sha256:7927e2d9a9e5771fc844f815e406c7dee4ca52e33ad8466ea8b7f03d5077275c"
+  },
+  "request": {
+    "method": "POST",
+    "endpoint": "https://sinalevi.go.cr/ResultadosNormativa/_CargarTextoCompleto"
+  },
+  "response": {
+    "status": 200,
+    "contentType": {
+      "mediaType": "application/json",
+      "charset": "utf-8"
+    },
+    "capturedAt": "2026-07-29T03:17:17.671Z"
+  },
+  "captureTool": {
+    "name": "sinalevi-fetch",
+    "version": "0.0.0"
+  },
+  "artifacts": {
+    "gzipPath": "corpus-sources/v1/cpca/57436-146091.raw.json.gz",
+    "sidecarPath": "corpus-sources/v1/cpca/57436-146091.capture.json",
+    "rawSha256": "5a03588de1fdad3cf3fb06ac5127898969345f62c227b19b071eb066a73aa43c",
+    "gzipSha256": "18618b009df7caf7b8328c4947c2b423f510c4ed2268fe0d6777bdaee4738b6a",
+    "uncompressedBytes": 1545118
+  },
+  "observedHandlers": {
+    "fichaAnchors": 229,
+    "parsedHandlers": 229,
+    "articleKind": 224,
+    "transitoryKind": 5,
+    "zeroFicha": 229,
+    "authorityFicha": 0,
+    "versionMatched": 229,
+    "distinctSourceUnitIds": 229
+  }
+}

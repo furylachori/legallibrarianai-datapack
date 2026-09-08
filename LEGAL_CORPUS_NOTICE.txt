@@ -1,0 +1,15 @@
+Fuente oficial: Procuraduria General de la Republica de Costa Rica, SINALEVI-SCIJ.
+
+El articulo 75 de la Ley sobre Derechos de Autor y Derechos Conexos, Ley No.
+6683, permite reproducir constituciones, leyes, decretos, reglamentos y otros
+instrumentos publicos sujeto a conformidad estricta con la edicion oficial.
+Este aviso identifica esa base juridica, pero no certifica por si solo la
+conformidad de cada extraccion.
+
+Cambios realizados: extraccion y estructuracion local en SQLite. El espaciado,
+los parrafos y las tablas pueden estar normalizados o aplanados. Cada autoridad
+conserva sus coordenadas IdFichaNorma e IdVersionNorma para verificacion contra
+la fuente oficial. Verifique el texto antes de citarlo.
+
+Fuente del servicio: https://www.pgr.go.cr/servicios/sinalevi/
+Sin endoso de la Procuraduria General de la Republica.

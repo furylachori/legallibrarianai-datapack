@@ -1,0 +1,157 @@
+# Data-repo CI (CORPUS-SPLIT slice B1 work-order source).
+# Installed as .github/workflows/data-ci.yml by scripts/seal-data-pack.py
+# (seal copies this file to that path; the copy is what the pack carries).
+#
+# ONLINE MARKING (work-order item 2): jobs notice / no-app-paths /
+# content-gate are pure-local and turn green offline. deps / build need the
+# npm registry for `npm ci`. publish additionally needs the GitHub API,
+# a release-signing seed, and a key id (GATE-2 runs data CI green for real;
+# GATE-3 is the first public release).
+name: data-ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Non-publish CI may overlap; the publish job narrows to its own group below.
+concurrency:
+  group: data-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: canonical notice present and non-empty
+        run: test -s LEGAL_CORPUS_NOTICE.txt
+
+  no-app-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: reject app files and .git artifacts
+        run: |
+          offenders=$(git ls-files -z | tr '\0' '\n' | grep -E '^(\.git|app)(/|$)' || true)
+          test -z "$offenders" || { echo "$offenders"; exit 1; }
+
+  content-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: zero quarantined raws in repo
+        run: |
+          test "$(git ls-files '*.raw.json.gz' | wc -l)" -eq 0
+          test "$(find . -path ./.git -prune -o -name '*.raw.json.gz' -print | wc -l)" -eq 0
+      - name: corpus-sources matches committed public inventory both ways
+        run: |
+          python3 -c "import json,subprocess;inv={e['path'] for e in json.load(open('data/corpus-inventory.json'))['entries'] if e['verdict']=='public'};disk=set(subprocess.run(['git','ls-files','corpus-sources'],capture_output=True,text=True,check=True).stdout.split());assert disk==inv,sorted((disk-inv)|(inv-disk))[:5]"
+      - name: deny-basename scan fails closed
+        run: |
+          hits=$(git ls-files 'corpus-sources' | sed 's#.*/##' | grep -iE 'dictamen|criterio|pronunciamiento|consulta|opinion|ruling|private' || true)
+          test -z "$hits" || { echo "$hits"; exit 1; }
+      - name: run vendored inventory classification test
+        run: npx vitest run tools/build-corpus-inventory.test.ts
+
+  deps:
+    runs-on: ubuntu-latest # ONLINE: npm ci needs the registry.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.3.0 # Pinned per data/BUILD-DEPS-DECISION.md.
+      - run: npm ci
+      - name: root pair mirrors the data pair byte-equal
+        run: |
+          cmp package.json data/package.json
+          cmp package-lock.json data/package-lock.json
+      - name: every closure npm external exactly pinned
+        run: |
+          python3 -c "import json,re;cl=json.load(open('data/build-closure.json'));pkg=json.load(open('package.json'));deps={**pkg.get('dependencies',{}),**pkg.get('devDependencies',{})};bad=[p for p in cl['externals']['npm'] if p not in deps or not re.fullmatch(r'\d+\.\d+\.\d+(-[\w.]+)?',deps[p])];assert not bad,bad"
+      - name: signing key id charset (closes the A1 review note)
+        run: |
+          test -n "${SIGNING_KEY_ID:?SIGNING_KEY_ID is required}"
+          printf '%s' "$SIGNING_KEY_ID" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+      - name: closure regen file-set-equals committed closure
+        run: |
+          npx vite-node tools/build-closure.ts > "$RUNNER_TEMP/closure-regen.json"
+          python3 -c "import json,os;a=json.load(open('data/build-closure.json'));b=json.load(open(os.environ['RUNNER_TEMP']+'/closure-regen.json'));assert a['entry']==b['entry'] and sorted(a['files'])==sorted(b['files'])"
+      - name: closure gate tests (regen-compare and pin checks)
+        run: npx vitest run tools/build-closure.test.ts
+
+  build:
+    runs-on: ubuntu-latest # ONLINE: needs the deps install above.
+    needs: [notice, no-app-paths, content-gate, deps]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.3.0 # Pinned per data/BUILD-DEPS-DECISION.md.
+      - run: npm ci
+      - name: two full builds then byte-compare
+        run: |
+          npx vite-node scripts/build-corpus-artifact.ts --fixturesDir fixtures/full --outDir "$RUNNER_TEMP/build-a"
+          npx vite-node scripts/build-corpus-artifact.ts --fixturesDir fixtures/full --outDir "$RUNNER_TEMP/build-b"
+          diff -r "$RUNNER_TEMP/build-a" "$RUNNER_TEMP/build-b"
+          cmp "$RUNNER_TEMP/build-a/NOTICE-SINALEVI.txt" LEGAL_CORPUS_NOTICE.txt
+
+  publish:
+    runs-on: ubuntu-latest # ONLINE: GitHub API + secrets; GATE-3 trigger.
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    concurrency:
+      group: data-publish # Single writer: exactly one release bump at a time.
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.3.0 # Pinned per data/BUILD-DEPS-DECISION.md.
+      - run: npm ci
+      - name: build the release outDir
+        run: npx vite-node scripts/build-corpus-artifact.ts --fixturesDir fixtures/full --outDir "$RUNNER_TEMP/release-build"
+      - name: bump registry, fail if tag or version exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          test -n "${SIGNING_KEY_ID:?SIGNING_KEY_ID is required}"
+          printf '%s' "$SIGNING_KEY_ID" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+          NEXT=$(python3 -c "import json;print(json.load(open('data/channel-registry.json'))['counter']+1)")
+          TAG="corpus-v${NEXT}"
+          python3 -c "import json;r=json.load(open('data/channel-registry.json'));assert '${NEXT}' not in {str(v) for v in r['releases'].values()},'version exists';assert '$TAG' not in r['releases'],'tag exists'"
+          gh release view "$TAG" >/dev/null 2>&1 && { echo "tag exists: $TAG"; exit 1; } || true
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "NEXT=$NEXT" >> "$GITHUB_ENV"
+      - name: emit channel.json and key-id-tagged sig via the A1 writer
+        env:
+          SIGNING_SEED_HEX: ${{ secrets.SIGNING_SEED_HEX }}
+        run: |
+          cat > "$RUNNER_TEMP/emit-channel.mts" <<'EOF'
+          import { writeChannelManifest } from "${{ github.workspace }}/src/channel/writer.js";
+          const out = writeChannelManifest(process.env.RELEASE_DIR as string, {
+            corpusVersion: Number(process.env.NEXT),
+            releaseTag: process.env.TAG as string,
+            keyId: process.env.SIGNING_KEY_ID as string,
+            secretSeedHex: process.env.SIGNING_SEED_HEX as string,
+          });
+          console.log(`channel=${out.channelPath} sig=${out.sigPath}`);
+          EOF
+          RELEASE_DIR="$RUNNER_TEMP/release-build" npx vite-node "$RUNNER_TEMP/emit-channel.mts"
+      - name: create the GitHub Release with the four assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes "corpusVersion $NEXT" \
+            "$RUNNER_TEMP/release-build/corpus.sqlite" \
+            "$RUNNER_TEMP/release-build/corpus-manifest.json" \
+            "$RUNNER_TEMP/release-build/channel.json" \
+            "$RUNNER_TEMP/release-build/channel.json.sig.${SIGNING_KEY_ID:?SIGNING_KEY_ID is required}"
+      - name: commit the bumped registry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 -c "import json;p='data/channel-registry.json';r=json.load(open(p));r['counter']=$NEXT;r['releases']['$TAG']=$NEXT;json.dump(r,open(p,'w'),indent=2);open(p,'a').write('\n')"
+          git add data/channel-registry.json
+          git -c user.email='data-ci@local' -c user.name='data-ci' commit -m "data: release $TAG corpusVersion $NEXT"
+          git push origin HEAD:main

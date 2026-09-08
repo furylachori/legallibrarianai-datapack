@@ -1,0 +1,33 @@
+{
+  "entry": "scripts/build-corpus-artifact.ts",
+  "files": [
+    "scripts/build-corpus-artifact.ts",
+    "src/cite/article-number.ts",
+    "src/cite/reviewed-penal-source-classifications.ts",
+    "src/corpus/content-identity.ts",
+    "src/corpus/manifest.ts",
+    "src/corpus/reviewed-corpus-sources.ts",
+    "src/corpus/reviewed-input-catalog.ts",
+    "src/db/build.ts",
+    "src/db/database-init.node.ts",
+    "src/db/database.ts",
+    "src/sinalevi/corpus-builder-gate.ts",
+    "src/sinalevi/dom-shim.ts",
+    "src/sinalevi/extractor.ts",
+    "src/sinalevi/rules.ts",
+    "src/sinalevi/source-unit.ts",
+    "src/sinalevi/types.ts"
+  ],
+  "externals": {
+    "npm": [
+      "linkedom",
+      "sql.js-fts5"
+    ],
+    "builtin": [
+      "node:crypto",
+      "node:fs",
+      "node:path",
+      "node:url"
+    ]
+  }
+}
