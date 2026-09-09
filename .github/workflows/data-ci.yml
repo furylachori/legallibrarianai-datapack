@@ -146,7 +146,7 @@ jobs:
           SIGNING_SEED_HEX: ${{ secrets.SIGNING_SEED_HEX }}
         run: |
           cat > "$RUNNER_TEMP/emit-channel.mts" <<'EOF'
-          import { writeChannelManifest } from "${{ github.workspace }}/src/channel/writer.js";
+          import { writeChannelManifest } from "${{ github.workspace }}/src/channel/writer.ts";
           const out = writeChannelManifest(process.env.RELEASE_DIR as string, {
             corpusVersion: Number(process.env.NEXT),
             releaseTag: process.env.TAG as string,
