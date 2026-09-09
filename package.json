@@ -6,7 +6,8 @@
   "//": "B0 build-lane pins: every version is exact (no ranges) and matches the app-repo install it was read from (see data/BUILD-DEPS-DECISION.md pins table). Runtime externals come from data/build-closure.json; tooling runs the lane (vite-node executes the build entry, tsc typechecks the vendored lane incl. node: builtins via @types/node, vitest runs its fast gates).",
   "dependencies": {
     "linkedom": "0.18.13",
-    "sql.js-fts5": "1.4.0"
+    "sql.js-fts5": "1.4.0",
+    "zod": "4.5.0"
   },
   "devDependencies": {
     "@types/node": "22.20.1",

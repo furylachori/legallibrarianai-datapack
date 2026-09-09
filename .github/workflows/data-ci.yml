@@ -81,10 +81,22 @@ jobs:
         with:
           node-version: 26.3.0 # Pinned per data/BUILD-DEPS-DECISION.md.
       - run: npm ci
-      - name: root pair mirrors the data pair byte-equal
+      - name: root pair is the data pair plus the zod pin
         run: |
-          cmp package.json data/package.json
-          cmp package-lock.json data/package-lock.json
+          python3 - <<'EOF'
+          import json
+          data = json.load(open('data/package.json'))
+          root = json.load(open('package.json'))
+          lock = json.load(open('package-lock.json'))
+          pin = json.load(open('node_modules/zod/package.json'))['version']
+          assert root.get('dependencies', {}).get('zod') == pin, 'zod pin missing'
+          expect = dict(data, dependencies={**(data.get('dependencies') or {}), 'zod': pin})
+          assert root == expect, 'root manifest is not exactly data/ + zod pin'
+          lock_root = lock['packages']['']
+          assert lock_root.get('dependencies', {}) == root.get('dependencies', {}), 'lock root deps differ'
+          assert lock_root.get('devDependencies', {}) == root.get('devDependencies', {}), 'lock root devDeps differ'
+          assert lock['packages']['node_modules/zod']['version'] == pin, 'lock zod entry differs'
+          EOF
       - name: every closure npm external exactly pinned
         run: |
           python3 -c "import json,re;cl=json.load(open('data/build-closure.json'));pkg=json.load(open('package.json'));deps={**pkg.get('dependencies',{}),**pkg.get('devDependencies',{})};bad=[p for p in cl['externals']['npm'] if p not in deps or not re.fullmatch(r'\d+\.\d+\.\d+(-[\w.]+)?',deps[p])];assert not bad,bad"
