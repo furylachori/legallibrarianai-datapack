@@ -73,6 +73,8 @@ jobs:
 
   deps:
     runs-on: ubuntu-latest # ONLINE: npm ci needs the registry.
+    env:
+      SIGNING_KEY_ID: ${{ vars.SIGNING_KEY_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -117,6 +119,8 @@ jobs:
     concurrency:
       group: data-publish # Single writer: exactly one release bump at a time.
       cancel-in-progress: false
+    env:
+      SIGNING_KEY_ID: ${{ vars.SIGNING_KEY_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
