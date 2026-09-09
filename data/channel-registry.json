@@ -1,1 +1,6 @@
-{"counter":0,"releases":{}}
+{
+  "counter": 1,
+  "releases": {
+    "corpus-v1": 1
+  }
+}
