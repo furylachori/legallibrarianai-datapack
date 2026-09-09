@@ -144,9 +144,10 @@ jobs:
       - name: emit channel.json and key-id-tagged sig via the A1 writer
         env:
           SIGNING_SEED_HEX: ${{ secrets.SIGNING_SEED_HEX }}
+        working-directory: ${{ github.workspace }}
         run: |
-          cat > "$RUNNER_TEMP/emit-channel.mts" <<'EOF'
-          import { writeChannelManifest } from "${{ github.workspace }}/src/channel/writer.ts";
+          cat > "$GITHUB_WORKSPACE/emit-channel.mts" <<'EOF'
+          import { writeChannelManifest } from "./src/channel/writer.ts";
           const out = writeChannelManifest(process.env.RELEASE_DIR as string, {
             corpusVersion: Number(process.env.NEXT),
             releaseTag: process.env.TAG as string,
@@ -155,7 +156,8 @@ jobs:
           });
           console.log(`channel=${out.channelPath} sig=${out.sigPath}`);
           EOF
-          RELEASE_DIR="$RUNNER_TEMP/release-build" npx vite-node "$RUNNER_TEMP/emit-channel.mts"
+          RELEASE_DIR="$RUNNER_TEMP/release-build" npx vite-node emit-channel.mts
+          rm "$GITHUB_WORKSPACE/emit-channel.mts"
       - name: create the GitHub Release with the four assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
