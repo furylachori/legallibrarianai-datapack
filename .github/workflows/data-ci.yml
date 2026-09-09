@@ -112,6 +112,8 @@ jobs:
     runs-on: ubuntu-latest # ONLINE: GitHub API + secrets; GATE-3 trigger.
     needs: [build]
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     concurrency:
       group: data-publish # Single writer: exactly one release bump at a time.
       cancel-in-progress: false
@@ -132,7 +134,7 @@ jobs:
           NEXT=$(python3 -c "import json;print(json.load(open('data/channel-registry.json'))['counter']+1)")
           TAG="corpus-v${NEXT}"
           python3 -c "import json;r=json.load(open('data/channel-registry.json'));assert '${NEXT}' not in {str(v) for v in r['releases'].values()},'version exists';assert '$TAG' not in r['releases'],'tag exists'"
-          gh release view "$TAG" >/dev/null 2>&1 && { echo "tag exists: $TAG"; exit 1; } || true
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "tag exists: $TAG"; exit 1; fi
           echo "TAG=$TAG" >> "$GITHUB_ENV"
           echo "NEXT=$NEXT" >> "$GITHUB_ENV"
       - name: emit channel.json and key-id-tagged sig via the A1 writer
