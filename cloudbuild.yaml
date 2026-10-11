@@ -1,0 +1,16 @@
+steps:
+  - name: node:26.3.0-bookworm-slim
+    id: Corpus metadata and closure gates
+    entrypoint: bash
+    args:
+      - -euc
+      - |
+        npm ci
+        ./node_modules/.bin/vite-node tools/build-corpus-inventory.ts > /tmp/cloudbuild-inventory.json
+        node tools/cloudbuild-data-gates.mjs /tmp/cloudbuild-inventory.json
+        ./node_modules/.bin/vitest run tools/build-closure.test.ts
+timeout: 1200s
+options:
+  machineType: E2_STANDARD_2
+  logging: CLOUD_LOGGING_ONLY
+serviceAccount: projects/project-33a976dd-e360-4c43-8d9/serviceAccounts/ci-pr-smoke@project-33a976dd-e360-4c43-8d9.iam.gserviceaccount.com
