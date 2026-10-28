@@ -70,6 +70,10 @@ jobs:
           assert not quarantined, quarantined
           assert regen_public == committed_public, sorted((regen_public - committed_public) | (committed_public - regen_public))
           EOF
+      - name: Cloud Build helper and traversal regressions
+        run: |
+          node tools/cloudbuild-data-gates.mjs "$RUNNER_TEMP/inv-regen.json"
+          node --test tools/cloudbuild-data-gates.test.mjs
 
   deps:
     runs-on: ubuntu-latest # ONLINE: npm ci needs the registry.
