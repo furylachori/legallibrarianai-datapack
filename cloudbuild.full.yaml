@@ -8,6 +8,7 @@ steps:
         npm ci
         ./node_modules/.bin/vite-node tools/build-corpus-inventory.ts > /tmp/cloudbuild-inventory.json
         node tools/cloudbuild-data-gates.mjs /tmp/cloudbuild-inventory.json
+        node --test tools/cloudbuild-data-gates.test.mjs
         ./node_modules/.bin/vitest run tools/build-closure.test.ts
         rm -rf /tmp/cloudbuild-corpus-a /tmp/cloudbuild-corpus-b
         ./node_modules/.bin/vite-node scripts/build-corpus-artifact.ts --fixturesDir fixtures/full --outDir /tmp/cloudbuild-corpus-a

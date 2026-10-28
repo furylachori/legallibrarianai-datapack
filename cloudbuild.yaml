@@ -8,6 +8,7 @@ steps:
         npm ci
         ./node_modules/.bin/vite-node tools/build-corpus-inventory.ts > /tmp/cloudbuild-inventory.json
         node tools/cloudbuild-data-gates.mjs /tmp/cloudbuild-inventory.json
+        node --test tools/cloudbuild-data-gates.test.mjs
         ./node_modules/.bin/vitest run tools/build-closure.test.ts
 timeout: 1200s
 options:

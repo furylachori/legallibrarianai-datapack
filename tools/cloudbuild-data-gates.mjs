@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { lstatSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,24 +26,28 @@ assert.deepEqual(invalidEntries, [], "generated inventory contains quarantined o
 assertSameSet(publicPaths(generatedInventory), publicPaths(committedInventory),
   "generated public inventory differs from data/corpus-inventory.json");
 
-function walkFiles(directory, { rejectSymlinks = false, rejectRawSymlinks = false } = {}) {
+function walkFiles(directory, { rejectSymlinks = false, rejectRawPaths = false } = {}) {
   const files = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === ".git") continue;
     const path = resolve(directory, entry.name);
+    if (path === resolve(repoRoot, ".git")) continue;
+    if (rejectRawPaths && entry.name.endsWith(".raw.json.gz")) {
+      throw new Error(`raw quarantined captures must not be present in the repository tree: ${relative(repoRoot, path)}`);
+    }
     if (entry.isSymbolicLink()) {
-      if (rejectSymlinks || (rejectRawSymlinks && entry.name.endsWith(".raw.json.gz"))) {
+      if (rejectSymlinks) {
         throw new Error(`symbolic link is not allowed in this source inventory: ${relative(repoRoot, path)}`);
       }
       continue;
     }
-    if (entry.isDirectory()) files.push(...walkFiles(path, { rejectSymlinks, rejectRawSymlinks }));
+    if (entry.isDirectory()) files.push(...walkFiles(path, { rejectSymlinks, rejectRawPaths }));
     else if (entry.isFile()) files.push(path);
   }
   return files;
 }
 
 const sourceRoot = resolve(repoRoot, "corpus-sources");
+assert(lstatSync(sourceRoot).isDirectory(), "corpus-sources must be a real directory, not a symbolic link");
 const sourceFiles = walkFiles(sourceRoot, { rejectSymlinks: true })
   .map((path) => relative(repoRoot, path).split(sep).join("/"));
 const denyBasename = /(?:dictamen|criterio|pronunciamiento|consulta|opinion|ruling|private)/i;
@@ -52,9 +56,7 @@ assert.deepEqual(denyHits, [], "corpus-sources contains a denied private-ruling 
 assertSameSet(new Set(sourceFiles), publicPaths(committedInventory),
   "filesystem corpus-sources inventory differs from committed public inventory");
 
-const rawFiles = walkFiles(repoRoot, { rejectRawSymlinks: true })
-  .filter((path) => path.endsWith(".raw.json.gz"));
-assert.deepEqual(rawFiles, [], "raw quarantined captures must not be present in the repository tree");
+walkFiles(repoRoot, { rejectRawPaths: true });
 
 const dataPackage = readJson("data/package.json");
 const rootPackage = readJson("package.json");

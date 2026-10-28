@@ -18,12 +18,18 @@ so it does not require Cloud Build to retain Git's index or `.git` directory.
 It still compares the on-disk corpus sources to the committed public
 inventory, fails on any generated deny/quarantine entry, and rejects raw
 capture files, preserves the existing private-ruling basename deny list,
-rejects symlinks under `corpus-sources/`, and rejects raw-capture symlinks. The
-raw-file scan checks the full checkout, including generated metadata and
-dependency trees, and prunes only `.git`, matching the existing `data-ci`
-workflow's raw-capture check. Dependency installation uses `npm ci` and
+rejects a symlinked `corpus-sources/` root and symlinks beneath it, and rejects
+raw-capture paths regardless of whether they are files, directories, or symlinks.
+The raw-file scan checks the full checkout, including generated metadata and
+dependency trees, and prunes only the checkout's root `.git`, matching the
+existing `data-ci` workflow's raw-capture check. Dependency installation uses `npm ci` and
 requires npm registry network access; the test and fixture build steps run
 after install without live services.
+
+Both configurations run `tools/cloudbuild-data-gates.test.mjs` to check the
+helper's acceptance and rejection behavior using temporary synthetic trees.
+The GitHub `data-ci` content gate also executes the helper against its regenerated
+inventory and runs these regressions; this does not execute the Cloud Build YAML.
 
 The `data-ci` GitHub workflow's `publish` job is intentionally excluded. These
 Cloud Build configs do not use signing keys, the GitHub API, release tags,
