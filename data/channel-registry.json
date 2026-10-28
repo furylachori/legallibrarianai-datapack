@@ -1,6 +1,7 @@
 {
-  "counter": 1,
+  "counter": 2,
   "releases": {
-    "corpus-v1": 1
+    "corpus-v1": 1,
+    "corpus-v2": 2
   }
 }
